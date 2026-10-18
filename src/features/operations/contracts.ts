@@ -1,0 +1,11 @@
+export const datasetTypes = ['COMPANY', 'SECURITY', 'FINANCIAL_STATEMENT', 'FINANCIAL_METRIC', 'MARKET_PRICE', 'MARKET_INDEX', 'NEWS', 'NEWS_DATA', 'MACRO', 'OTHER'] as const;
+export const sourceTypes = ['API', 'LIBRARY', 'WEB', 'RSS', 'FILE', 'MANUAL', 'OTHER'] as const;
+export const licenseStatuses = ['UNKNOWN', 'FREE', 'LICENSED', 'RESTRICTED', 'INTERNAL'] as const;
+export const operations = ['HEALTH', 'PROVIDERS', 'QUOTE', 'OHLCV', 'INDEX_LIST', 'INDEX_OHLCV', 'INDEX_LATEST', 'INDEX_MEMBERS', 'COMPANY', 'FINANCIAL_STATEMENT', 'RATIO', 'MANAGEMENT', 'SUBSIDIARIES', 'NEWS', 'EVENTS', 'NEWS_STATUS', 'NEWS_SITES', 'NEWS_LATEST', 'NEWS_HISTORY', 'NEWS_COMPANY', 'PROXY_PROVIDERS', 'RAW_PROXY', 'MACRO_OBSERVATIONS', 'FETCH_URL'] as const;
+export type ExternalOperation = typeof operations[number];
+export interface CreateIngestionJobRequest { dataSourceCode: string; code: string; name: string; datasetType: typeof datasetTypes[number]; cronExpression?: string | null; parameters: Record<string, unknown>; maxRetries?: number | null; timeoutSeconds?: number | null; active?: boolean | null }
+export interface ManualIngestionRequest { operation: ExternalOperation; provider?: string; dataSourceCode?: string; symbol?: string; startDate?: string; endDate?: string; interval?: string; parameters?: Record<string, string> }
+export interface DataSourceRequest { code: string; name: string; sourceType: typeof sourceTypes[number]; baseUrl?: string | null; provider?: string | null; official: boolean; licenseStatus?: typeof licenseStatuses[number] | null; active: boolean }
+export interface IngestionExecutionResponse { runId: string; rawPayloadId: string | null; status: string; upstreamStatus: number; contentType: string | null; checksumSha256: string | null; duplicateChecksum: boolean }
+export interface ValidationExecutionResponse { rawPayloadId: string; ingestionRunId: string; status: string; passed: number; failed: number; skipped: number; dataVersionId: string | null; alreadyProcessed: boolean }
+export interface ValidationRule { id: number; code: string; name: string; dataDomain: string; severity: string; ruleType: string; ruleConfig: unknown; description: string | null; isActive: boolean | null; createdAt: string; updatedAt: string; executorKey: string }
