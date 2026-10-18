@@ -1,0 +1,1 @@
+export function App() { return <main className="content"><h1>TOKEN BURNER Admin Console</h1><p>Dashboard workspace</p></main>; }
