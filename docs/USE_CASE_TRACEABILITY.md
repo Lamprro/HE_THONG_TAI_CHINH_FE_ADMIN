@@ -1,0 +1,32 @@
+# Use-case traceability — 2026-10-15
+
+The phase-1 use cases are business references described in the user's additional requirements. The original analysis/design report was not supplied here. Java source in the existing local backend checkout is the API/DTO authority; database diagrams or entity presence alone do not establish a callable endpoint. No backend source was changed.
+
+| Use Case | Frontend Feature | Java API | Implementation Status | Missing Backend Capability |
+|---|---|---|---|---|
+| UC-A01 — Admin Authentication | Optional future auth integration seam and 401/403 handling | No unified login/logout/session/RBAC contract verified | Deferred per user direction; current frontend has no role gate | Backend login/logout/session lifecycle, CSRF policy and per-operation authorization when introduced (BR-001) |
+| UC-A02 — Data Sources / Data Scope | Source add/edit; Company/Security tabs; company details/aliases; create/edit master forms; security activation | GET/POST /api/data-sources; GET/POST /api/companies; PUT /api/companies/{id}; GET/POST /api/companies/{id}/aliases; GET /api/securities?activeOnly=false; POST /api/securities; PUT /api/securities/{id}; PATCH /api/securities/{id}/activation | Business described; controllers/DTOs/MasterDataService/provisioning verified locally; FE integrated; serialization tested with interception only; current actions available | Future authentication; exact decimal representation policy for large BigDecimal values; explicit provisioning remains an intentional product omission |
+| UC-A03 — Ingestion Operations | Active jobs, create/run/activation review, manual ingestion, run history and raw metadata | /api/ingestion-jobs GET/POST and /{id}/run POST, /{id}/activation PATCH; POST /api/ingestions/manual; GET /api/ingestions, /{id}; GET /api/raw-payloads, /{id} | Business described; Java source verified; FE integrated; serialization tested, no live execution; current actions available | All/inactive job retrieval, future authorization, audit and run filtering/pagination (BR-001–004, BR-008) |
+| UC-A04 — Data Quality / Validation | Rules/results/handling/severity/observed/expected/message, resolution notes; run/raw links; raw and pending validation workflows | GET /api/admin/validation/rules, /results, /results/open; POST /raw-payloads/{id}, /pending | Business described; existing source contracts verified; FE integrated; read UI and serialization tested with interception; current actions available | Quarantine queries/detail and Resolve/Reject/Reprocess with reviewer, notes and immutable history (BR-005, BR-009). No such product buttons or local transitions exist |
+| UC-A05 — Duplicate / Revision / Data Versions | Raw SHA-256 metadata; actual duplicateChecksum execution-response indicator; version status/code/ID/parent/checksum/timestamps; loaded parent and run navigation | GET /api/raw-payloads/{id}?includeBody=false; GET /api/admin/validation/data-versions; IngestionExecutionResponse.duplicateChecksum | Business described; available DTO/entity fields verified; FE read integration implemented; raw/version navigation browser tested with fixtures; duplicate display not verified against a live response | Duplicate grouping/evidence and revision/restatement/official-version selection/recovery workflow (BR-010). A checksum or ACTIVE label does not prove a revision decision |
+| UC-S01 — Scheduled Ingestion | Configured job active/cron; actual run status and timestamps; related loaded execution sample | GET /api/ingestion-jobs; GET /api/ingestions; no scheduler-runtime API verified | Business described; configuration/execution contracts verified; FE displays separately; read rendering tested with interception; scheduler runtime unverified | Scheduler enabled state, heartbeat, last sweep, error/concurrency/queue details, and authoritative schedule diagnostics (BR-006). No scheduler switch, inferred health or promised next execution |
+
+**Runtime distinction:** isolated browser fixtures and intercepted fetch tests verify frontend behavior, not a deployed Java service or database writes. No live GET or mutation was exercised during this extension. Current mutations are available after review and confirmation; runtime results still need verification with Java.
+
+## Relationship evidence
+
+- Source → Job: job.dataSourceId matches source.id. Only the active job catalog is available.
+- Job → Run: run.ingestionJobId matches job.id in the recent run sample. Null means no job relation is supplied, not that another job should be guessed.
+- Run → Raw Payload: metadata is queried with runId; payload.ingestionRunId is retained. Individual metadata uses the verified /api/raw-payloads/{id}?includeBody=false endpoint.
+- Raw Payload → Validation Result: match result.rawPayloadId, not just symbol, time or checksum.
+- Validation Result → Run: use result.ingestionRunId directly. Resolution note/reviewer/time are shown only from existing fields.
+- Run → Data Version: match version.ingestionRunId. Versions do not expose a direct rawPayloadId relation; the UI labels the join as run-based.
+- Version → Parent: use parentDataVersionId only. A parent can be opened only when its actual row is in the loaded version sample; no missing detail API is invented.
+
+All sampled views state their scope. Empty matching subsets are not proof of absence, validation completion, accepted data or scheduler success. Missing query capabilities are tracked in BR-011.
+
+## Security scope side effects
+
+MasterDataService calls SecurityJobProvisioningService.provision during security create, update and activation. Provisioning first calls ensureSources and then either upserts deterministic jobs for active securities or deactivates job codes for inactive securities. Thus even deactivation may upsert VNSTOCK/VNDIRECT/CAFEF source configurations before changing jobs. Changing a symbol can affect which deterministic codes are synchronized; no orphan-job cleanup guarantee is inferred.
+
+The UI warns about jobs and source configuration before review/confirmation. Settled master mutations invalidate companies, securities, aliases, jobs and sources, as well as existing operational queries. No provisioning call occurs on page open, selection, filtering or details. The manual POST /api/securities/{id}/ingestion-jobs/provision endpoint is source-verified but intentionally not exposed: the current scope workflows already call provisioning and no separate manual-repair business flow was established. It is not rendered as a dead button.
