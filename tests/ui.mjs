@@ -1,0 +1,100 @@
+import { createRequire } from 'node:module';
+import { createServer } from 'node:http';
+import { readFile } from 'node:fs/promises';
+import { extname, resolve } from 'node:path';
+import assert from 'node:assert/strict';
+const require = createRequire(import.meta.url);
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+// Serves the production build and intercepts every API request. No live backend access.
+const root = resolve('dist');
+const server = createServer(async (req, res) => {
+  const path = resolve(root, `.${req.url === '/' ? '/index.html' : req.url.split('?')[0]}`);
+  if (!path.startsWith(`${root}\\`) && !path.startsWith(`${root}/`)) { res.writeHead(403).end(); return; }
+  try { const body = await readFile(path); res.setHeader('Content-Type', ({ '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' })[extname(path)] || 'application/octet-stream'); res.end(body); }
+  catch { res.writeHead(404).end(); }
+});
+await new Promise(r => server.listen(0, '127.0.0.1', r));
+const browser = await chromium.launch({ headless: true, channel: process.env.PLAYWRIGHT_CHANNEL || 'chrome' });
+const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+const problems = []; const writes = [];
+page.on('pageerror', error => problems.push(error.message));
+const source = { id: 1, code: 'VN', name: 'Market Source', provider: 'vnstock', sourceType: 'API', priority: 1, official: true, licenseStatus: 'FREE', baseUrl: 'https://example.org', active: true };
+const job = { id: '00000000-0000-0000-0000-000000000001', dataSourceId: 1, dataSourceCode: 'VN', code: 'PRICES', name: 'Price Import', datasetType: 'MARKET_PRICE', cronExpression: null, parameters: {}, maxRetries: 10, timeoutSeconds: 120, active: true, createdAt: '2026-10-15T00:00:00Z' };
+const company = { id: 'company-1', companyCode: 'ACME', legalName: 'Acme Company', shortName: 'Acme', englishName: null, taxCode: '123', industryCode: null, industryName: 'Technology', sectorName: null, website: null, headquarters: null, foundedDate: null, listingStatus: null, description: 'Test master record', active: true };
+const security = { id: 'security-1', companyId: company.id, symbol: 'FPT', exchange: 'HOSE', securityType: 'STOCK', isin: null, currency: 'VND', listedDate: null, delistedDate: null, sharesOutstanding: 1000, parValue: 10000, primary: true, active: false };
+const run = { id: '00000000-0000-0000-0000-000000000002', ingestionJobId: job.id, dataSourceId: 1, triggerType: 'MANUAL', status: 'SUCCESS', fetchedCount: 2, insertedCount: 2, updatedCount: 0, rejectedCount: 0, errorCount: 0, startedAt: '2026-10-15T00:00:00Z', finishedAt: '2026-10-15T00:01:00Z', createdAt: '2026-10-15T00:00:00Z' };
+await page.route('**/api/**', async route => {
+  const request = route.request(), url = new URL(request.url());
+  if (request.method() !== 'GET') { writes.push(request.url()); await route.abort(); return; }
+  const path = url.pathname;
+  const data = path === '/api/companies' ? [company] : path === '/api/securities' ? [security] : path.endsWith('/aliases') ? [{ id: 1, alias: 'Acme Legacy', aliasType: 'FORMER_NAME' }] : path === '/api/health' ? { status: 'UP', service: 'financial-data-api' } : path === '/api/data-sources' ? [source] : path === '/api/ingestion-jobs' ? [job] : path === '/api/ingestions' ? [run] : path === `/api/ingestions/${run.id}` ? run : path === '/api/raw-payloads' ? [{ id: 'raw-1', ingestionRunId: run.id, dataSourceId: 1, contentType: 'application/json' }] : path === '/api/raw-payloads/raw-1' ? { id: 'raw-1', ingestionRunId: run.id, dataSourceId: 1, contentType: 'application/json', fetchedAt: run.createdAt, createdAt: run.createdAt, checksumSha256: 'a'.repeat(64), body: null } : path === '/api/admin/validation/rules' ? [{ id: 1, code: 'RAW_REQUIRED', name: 'Required fields', dataDomain: 'MARKET_PRICE', severity: 'ERROR', ruleType: 'SCHEMA', isActive: true, ruleConfig: {}, createdAt: run.createdAt, updatedAt: run.createdAt }] : [];
+  const resolved = path === '/api/admin/validation/results' || path === '/api/admin/validation/results/open' ? [{ id: 'validation-1', validationRuleId: 1, ruleCode: 'RAW_REQUIRED', rawPayloadId: 'raw-1', ingestionRunId: run.id, severity: 'ERROR', status: 'FAIL', handlingStatus: 'OPEN', message: 'Required field missing', observedValue: 'null', expectedValue: 'value', checkedAt: run.createdAt, resolvedByUserId: null, resolvedAt: null, resolutionNote: 'Check source mapping' }] : path === '/api/admin/validation/data-versions' ? [{ id: 'version-2', dataDomain: 'MARKET_PRICE', versionCode: 'VERSION-2', status: 'REJECTED', parentDataVersionId: 'version-1', ingestionRunId: run.id, createdAt: run.createdAt, activatedAt: null, checksumSha256: 'b'.repeat(64), rowCount: 2 }, { id: 'version-1', versionCode: 'VERSION-1', status: 'ACTIVE', parentDataVersionId: null, ingestionRunId: run.id, createdAt: run.createdAt }] : data;
+  await route.fulfill({ json: resolved, headers: { 'Access-Control-Allow-Origin': request.headers().origin || '*', 'Access-Control-Allow-Credentials': 'true' } });
+});
+const button = name => page.getByRole('button', { name, exact: true });
+const close = () => page.getByRole('button', { name: 'Close', exact: true }).click();
+const review = () => button('Review request').click();
+const available = async () => assert.equal(await button('Confirm and execute').isDisabled(), false);
+try {
+  await page.goto(`http://127.0.0.1:${server.address().port}`);
+  await button('Ingestion Jobs').click();
+  await button('Create Job').click(); await review();
+  assert.ok(await page.getByText('This field is required.', { exact: true }).count());
+  await page.getByLabel('Data Source *', { exact: true }).selectOption('VN');
+  await page.getByLabel('Job Code *', { exact: true }).fill('NEW_PRICE');
+  await page.getByLabel('Job Name *', { exact: true }).fill('New price import');
+  await page.getByLabel('Dataset Type *', { exact: true }).selectOption('MARKET_PRICE');
+  await page.getByLabel('Parameters (JSON object) *', { exact: true }).fill('[]'); await review();
+  assert.equal(await page.getByText('Enter a JSON object.', { exact: true }).count(), 1);
+  await page.getByLabel('Parameters (JSON object) *', { exact: true }).fill('{}'); await review(); await available(); await close();
+  await page.getByText('Price Import', { exact: true }).click(); await button('Run Now').click(); await review(); await available();
+  assert.equal(await page.getByText('This operation can call external services, consume resources and write data. It creates a new execution.').count(), 1); await close();
+  await page.getByText('Price Import', { exact: true }).click(); await button('Disable').click(); await review(); await available(); await close();
+  await button('New Manual Ingestion').click();
+  await page.getByLabel('Operation *', { exact: true }).selectOption('OHLCV');
+  await page.getByLabel('Data Source *', { exact: true }).selectOption('VN'); await review();
+  assert.equal(await page.getByText('Symbol is required for this operation.').count(), 1);
+  await page.getByLabel('Symbol', { exact: true }).fill('FPT'); await review(); await available(); await close();
+  await button('Data Sources').click(); await page.getByText('Market Source', { exact: true }).click(); await button('Edit Data Source').click();
+  assert.equal(await page.getByLabel('Code *', { exact: true }).getAttribute('readonly'), '');
+  assert.equal(await page.getByLabel('Name *', { exact: true }).inputValue(), 'Market Source');
+  await page.getByLabel('Active', { exact: true }).selectOption('false'); await review(); await available();
+  assert.equal(await page.getByText('The source active status will change. This can affect ingestion.').count(), 1); await close();
+  await button('Data Quality').click(); await page.getByRole('tab', { name: 'Validation Rules' }).click();
+  await page.getByText('RAW_REQUIRED', { exact: true }).waitFor();
+  await button('Validate Pending Data').click(); await page.getByLabel('Maximum payloads to process *').fill('101'); await review();
+  assert.equal(await page.getByText('Enter an integer from 1 to 100.').count(), 1);
+  await page.getByLabel('Maximum payloads to process *').fill('50'); await review(); await available(); await close();
+  await button('Ingestion Runs').click(); await page.getByText('Price Import', { exact: true }).click();
+  await button('Run Validation').click(); await review(); await available(); await close();
+  await button('Data Scope').click(); await page.getByText('Acme Company', { exact: true }).click();
+  await page.getByText('Acme Legacy', { exact: true }).waitFor(); await button('Edit Company').click();
+  assert.equal(await page.getByLabel('Legal Name *', { exact: true }).inputValue(), 'Acme Company');
+  assert.equal(await page.getByLabel('Description', { exact: true }).inputValue(), 'Test master record');
+  await review(); await available(); await close();
+  await page.getByText('Acme Company', { exact: true }).click(); await button('Add Alias').click(); await review();
+  assert.equal(await page.getByText('This field is required.', { exact: true }).count(), 1);
+  await page.getByLabel('Alias *', { exact: true }).fill('Another name'); await page.getByLabel('Alias Type *', { exact: true }).selectOption('OTHER');
+  await review(); await available(); await close();
+  await page.getByRole('tab', { name: 'Securities', exact: true }).click(); await page.getByText('FPT', { exact: true }).click();
+  await button('Activate Security').click(); await review(); await available();
+  assert.equal(await page.getByText('This request changes master data and can change ingestion jobs and source configuration.').count(), 1); await close();
+  await page.getByText('FPT', { exact: true }).click(); await button('Edit Security').click();
+  assert.equal(await page.getByLabel('Shares Outstanding', { exact: true }).inputValue(), '1000');
+  await page.getByLabel('Currency *', { exact: true }).fill('VIETNAM'); await review();
+  assert.equal(await page.getByText('Use a three-letter currency code.').count(), 1);
+  await page.getByLabel('Currency *', { exact: true }).fill('VND'); await review(); await available(); await close();
+  await button('Ingestion Runs').click(); await page.getByText('Price Import', { exact: true }).click();
+  await button('View Raw Payload Metadata').click(); await page.getByText('SHA-256: ' + 'a'.repeat(64), { exact: true }).waitFor();
+  await button('View payload validation results').click();
+  await page.getByText('RAW_REQUIRED', { exact: true }).click();
+  await page.getByText('Check source mapping', { exact: true }).waitFor();
+  await button('View Raw Payload Metadata').click(); await button('View data versions for run').click();
+  await page.getByText('VERSION-2', { exact: true }).click(); await button('View loaded parent version').click();
+  assert.equal(await page.getByRole('dialog').getByRole('heading', { name: 'VERSION-1', exact: true }).count(), 1); await close();
+  await page.setViewportSize({ width: 390, height: 844 }); await button('Ingestion Jobs').click(); await button('Create Job').click();
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await page.keyboard.press('Escape'); assert.equal(await page.getByRole('dialog').count(), 0);
+  assert.deepEqual(problems, []); assert.deepEqual(writes, []);
+  console.log('UI PASS: form validation, review/confirmation, available actions, run/raw actions, source prefill, rules, master forms/aliases/security side effects, raw-validation-version traversal and mobile layout; zero API writes.');
+} finally { await browser.close(); await new Promise(r => server.close(r)); }
