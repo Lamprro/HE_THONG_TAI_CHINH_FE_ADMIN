@@ -39,21 +39,23 @@ export function buildRequest(kind: 'create-job' | 'manual-ingestion' | 'upsert-s
   const source = sources.find(s => s.code === v.dataSourceCode && s.active && s.sourceType === 'API');
   if (!source) errors.dataSourceCode = 'Select an active API data source.';
   const provider = source?.provider?.toLowerCase() || '';
-  const noProvider = ['HEALTH', 'PROVIDERS', 'NEWS_STATUS', 'NEWS_SITES', 'NEWS_LATEST', 'NEWS_HISTORY', 'NEWS_COMPANY', 'PROXY_PROVIDERS', 'FETCH_URL'];
+  const noProvider = ['HEALTH', 'PROVIDERS', 'CAPABILITIES', 'NEWS_STATUS', 'NEWS_SITES', 'NEWS_LATEST', 'NEWS_HISTORY', 'NEWS_COMPANY', 'PROXY_PROVIDERS', 'FETCH_URL'];
   if (!noProvider.includes(operation) && !provider) errors.dataSourceCode = 'This operation requires a source with a provider.';
-  if (operation.startsWith('INDEX_') && provider !== 'vnstock') errors.dataSourceCode = 'Index operations require provider vnstock.';
+  if (operation.startsWith('INDEX_') && !(provider === 'vnstock' || (operation === 'INDEX_OHLCV' && ['kbs', 'vndirect', 'cafef'].includes(provider)))) errors.dataSourceCode = 'Index operations require provider vnstock.';
   if (['QUOTE', 'OHLCV', 'COMPANY', 'FINANCIAL_STATEMENT', 'RATIO'].includes(operation) && !['vnstock', 'vndirect', 'cafef'].includes(provider)) errors.dataSourceCode = 'Select a vnstock, vndirect or cafef API source.';
   if (operation === 'RATIO' && provider === 'cafef') errors.dataSourceCode = 'CafeF does not support ratios.';
   if (['MANAGEMENT', 'SUBSIDIARIES', 'NEWS', 'EVENTS'].includes(operation) && provider !== 'cafef') errors.dataSourceCode = 'Select a cafef API source for this operation.';
   if (operation === 'RAW_PROXY' && !['vndirect', 'cafef', 'cafef-financial'].includes(provider)) errors.dataSourceCode = 'Select a supported proxy source.';
   if (operation === 'MACRO_OBSERVATIONS' && !['worldbank', 'bis'].includes(provider)) errors.dataSourceCode = 'Select a worldbank or bis API source.';
+  if (operation === 'FOREIGN_TRADES' && provider !== 'cafef') errors.dataSourceCode = 'Foreign trades require provider cafef.';
+  if (['RATIO', 'FOREIGN_TRADES'].includes(operation) && !!v.startDate !== !!v.endDate) errors.endDate = 'History requires both start and end dates.';
   const symbol = v.symbol?.trim().toUpperCase();
-  if (['QUOTE', 'OHLCV', 'INDEX_OHLCV', 'INDEX_LATEST', 'INDEX_MEMBERS', 'COMPANY', 'FINANCIAL_STATEMENT', 'RATIO', 'MANAGEMENT', 'SUBSIDIARIES', 'NEWS', 'EVENTS', 'NEWS_COMPANY'].includes(operation) && !symbol) errors.symbol = 'Symbol is required for this operation.';
+  if (['QUOTE', 'OHLCV', 'INDEX_OHLCV', 'INDEX_LATEST', 'INDEX_MEMBERS', 'COMPANY', 'FINANCIAL_STATEMENT', 'RATIO', 'FOREIGN_TRADES', 'MANAGEMENT', 'SUBSIDIARIES', 'NEWS', 'EVENTS', 'NEWS_COMPANY'].includes(operation) && !symbol) errors.symbol = 'Symbol is required for this operation.';
   if (symbol && !/^[A-Z0-9._-]{1,20}$/.test(symbol)) errors.symbol = 'Use 1–20 letters, digits, dot, underscore or hyphen.';
   for (const field of ['startDate', 'endDate']) if (v[field] && (!/^\d{4}-\d{2}-\d{2}$/.test(v[field]) || Number.isNaN(Date.parse(v[field])) || new Date(v[field]).toISOString().slice(0, 10) !== v[field])) errors[field] = 'Enter a valid date.';
   if (v.startDate && v.endDate) {
     if (v.startDate > v.endDate) errors.endDate = 'End date must be on or after start date.';
-    const max = new Date(v.startDate); max.setUTCFullYear(max.getUTCFullYear() + (operation === 'MACRO_OBSERVATIONS' ? 20 : 10));
+    const max = new Date(v.startDate); max.setUTCFullYear(max.getUTCFullYear() + (operation === 'MACRO_OBSERVATIONS' ? 20 : ['RATIO', 'FOREIGN_TRADES', 'INDEX_OHLCV'].includes(operation) ? 15 : 10));
     if (new Date(v.endDate) > max) errors.endDate = 'Date range exceeds the operation limit.';
   }
   const parameters = object('parameters', true) as Record<string, string>;

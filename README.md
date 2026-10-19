@@ -36,3 +36,9 @@ For isolated browser checks, build first and make Playwright available (npm inst
 Jobs lists are active-only. Runs are the latest 20; validation and data versions the latest 50. Search/filter/counts describe those samples. Java health does not prove database, Redis, scheduler or collector health. Operational history does not replace actor-based admin audit logs.
 
 Documentation: [API matrix](docs/API_INTEGRATION_MATRIX.md), [backend gaps](docs/BACKEND_REQUIREMENTS.md), [architecture](docs/ARCHITECTURE.md), [implementation report](docs/IMPLEMENTATION_REPORT.md), [use-case traceability](docs/USE_CASE_TRACEABILITY.md).
+# Admin control update (2026-10-19)
+
+Read [current admin capabilities and verification](docs/ADMIN_CONTROL_20261019.md).
+Connect with the backend origin and its dedicated admin token. The token is kept
+only in browser memory. New hosting is intentionally not created; the user's
+instruction is to merge the FE changes only.

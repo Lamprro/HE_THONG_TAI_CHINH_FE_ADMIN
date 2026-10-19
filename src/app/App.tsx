@@ -14,6 +14,11 @@ import { DataQualityPage, ValidationDrawer } from '../features/data-quality/comp
 import { SourcesPage } from '../features/data-sources/components/SourcesPage';
 import { dateTime } from '../shared/utils/format';
 import { OperationDrawer, type Operation } from '../features/operations/OperationDrawer';
+import { SessionGate } from '../shared/api/SessionGate';
+import { CommandPage } from '../features/admin/CommandPage';
+import { DataBrowser } from '../features/admin/DataBrowser';
+import { NativeApiPage } from '../features/admin/NativeApiPage';
+import { RuntimePage } from '../features/admin/RuntimePage';
 
 const titles: Record<Section, { title: string; description: string }> = {
   overview: { title: 'System Overview', description: 'Monitor service health, recent ingestion and validation issues.' },
@@ -22,9 +27,16 @@ const titles: Record<Section, { title: string; description: string }> = {
   quality: { title: 'Data Quality', description: 'Review validation results and data versions.' },
   scope: { title: 'Data Scope', description: 'Manage companies and tracked securities.' },
   sources: { title: 'Data Sources', description: 'Manage configured financial data sources.' },
+  console: { title: 'Điều hành tác vụ', description: 'Chạy job, kiểm tra raw và theo dõi kết quả từ luồng thật.' },
+  data: { title: 'Tra cứu dữ liệu', description: 'Xem toàn bộ lịch sử, lỗi, phiên bản và bảng dữ liệu cuối có phân trang.' },
+  native: { title: 'Luồng & API quản trị', description: 'Thao tác các API thực sự đang có trên backend, gồm LLM, forecast và recovery.' },
+  runtime: { title: 'Hệ thống & độ phủ', description: 'Kiểm tra Java, database, Python, scheduler và các khoảng dữ liệu còn thiếu.' },
 };
 
 export function App() {
+  return <SessionGate><Dashboard/></SessionGate>;
+}
+function Dashboard() {
   const [section, setSection] = useState<Section>('overview');
   const [dark, setDark] = useState(false);
   const [runId, setRunId] = useState<string | null>(null);
@@ -79,6 +91,10 @@ export function App() {
       </header>
       <div className="connection-strip"><div><span className={`signal ${connection === 'Connected' ? 'online' : connection === 'Checking' ? '' : 'offline'}`}/><b>Java Backend</b><span>{connection}</span></div></div>
       {section === 'overview' && <Overview health={health} jobs={jobs} sources={sources} runs={runs} issues={issues} onRun={setRunId} onIssue={setIssue} onRuns={() => setSection('runs')} onQuality={() => setSection('quality')}/>}
+      {section === 'console' && <CommandPage jobs={jobs.data ?? []}/>}
+      {section === 'data' && <DataBrowser onRun={setRunId} onRaw={setRawId}/>}
+      {section === 'native' && <NativeApiPage/>}
+      {section === 'runtime' && <RuntimePage/>}
       {['jobs', 'runs', 'quality', 'sources'].includes(section) && <div className="management-toolbar">
         <div className="header-actions">
           {section === 'jobs' && <button className="primary-button" onClick={() => setOperation({ kind: 'create-job' })}>Create Job</button>}

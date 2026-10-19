@@ -1,4 +1,4 @@
-export const dateTime = (value?: string | null) => value ? new Date(value).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'medium' }) : '—';
+export const dateTime = (value?: string | null) => value ? new Date(value).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'medium', timeZone: 'Asia/Ho_Chi_Minh' }) : '—';
 export const duration = (start?: string | null, finish?: string | null) => {
   if (!start) return '—';
   if (!finish) return 'In progress / unknown';
