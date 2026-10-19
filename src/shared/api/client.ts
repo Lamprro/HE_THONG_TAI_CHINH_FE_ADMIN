@@ -1,6 +1,15 @@
 import { authHeaders, authCredentials, sessionExpired } from './access';
 import { safeText } from '../utils/format';
-export const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+export let API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://hardened-taekwondo-likewise.ngrok-free.dev';
+export function setApiBase(value: string) {
+  const url = new URL(value.trim());
+  if (url.username || url.password || url.search || url.hash ||
+      (url.protocol !== 'https:' && !(url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname))))
+    throw new Error('Use an HTTPS backend URL, or HTTP localhost, without credentials or query parameters.');
+  const path = url.pathname.replace(/\/$/, '').replace(/\/api$/, '');
+  if (path) throw new Error('Use the backend origin, without an API path.');
+  API_BASE = url.origin;
+}
 
 export class ApiError extends Error {
   constructor(message: string, public kind: 'http' | 'network' | 'timeout' | 'empty', public status?: number, public runId?: string, public upstreamStatus?: number) { super(message); }
@@ -10,7 +19,7 @@ export async function requestJson<T>(base: string, path: string, method = 'GET',
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), method === 'GET' ? 8000 : 180000);
   try {
-    const response = await fetch(`${base.replace(/\/$/, '')}${path}`, { method, signal: controller.signal, credentials: authCredentials(), headers: { Accept: 'application/json', ...authHeaders(), ...(payload === undefined ? {} : { 'Content-Type': 'application/json' }) }, ...(payload === undefined ? {} : { body: JSON.stringify(payload) }) });
+    const response = await fetch(`${base.replace(/\/$/, '')}${path}`, { method, redirect: 'error', signal: controller.signal, credentials: authCredentials(), headers: { Accept: 'application/json', 'ngrok-skip-browser-warning': 'true', ...authHeaders(), ...(payload === undefined ? {} : { 'Content-Type': 'application/json' }) }, ...(payload === undefined ? {} : { body: JSON.stringify(payload) }) });
     if (!response.ok) {
       if (response.status === 401) sessionExpired();
       let message = response.status === 401 ? 'Session expired or authentication required.' : response.status === 403 ? 'You do not have permission for this action.' : `Server returned HTTP ${response.status}.`;

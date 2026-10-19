@@ -11,6 +11,7 @@ export async function write<T>(action: AdminAction, path: string, method: 'POST'
 }
 const id = encodeURIComponent;
 export const adminApi = {
+  updateJob: (jobId: string, body: CreateIngestionJobRequest) => write<IngestionJob>('edit-job', `/api/ingestion-jobs/${id(jobId)}`, 'PUT', body),
   createJob: (body: CreateIngestionJobRequest) => write<IngestionJob>('create-job', '/api/ingestion-jobs', 'POST', body),
   runJob: (jobId: string) => write<IngestionExecutionResponse>('run-job', `/api/ingestion-jobs/${id(jobId)}/run`, 'POST'),
   activation: ({ jobId, active }: { jobId: string; active: boolean }) => write<IngestionJob>('activation', `/api/ingestion-jobs/${id(jobId)}/activation`, 'PATCH', { active }, !active),

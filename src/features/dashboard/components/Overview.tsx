@@ -27,7 +27,7 @@ export function StatusChart({ runs }: { runs: UseQueryResult<IngestionRun[]> }) 
 export function Overview({ health, jobs, sources, runs, issues, onRun, onIssue, onRuns, onQuality }: { health: UseQueryResult<HealthObservation>; jobs: UseQueryResult<IngestionJob[]>; sources: UseQueryResult<DataSource[]>; runs: UseQueryResult<IngestionRun[]>; issues: UseQueryResult<ValidationResult[]>; onRun: (id: string) => void; onIssue: (issue: ValidationResult) => void; onRuns: () => void; onQuality: () => void }) {
   const status = health.isPending ? 'Checking' : health.isError || health.data?.data.status !== 'UP' ? 'Offline' : 'Online';
   const metrics = [
-    { label: 'Active Jobs', value: value(jobs, rows => rows.length), scope: 'Active jobs returned by API', icon: <Activity size={18}/> },
+    { label: 'Active Jobs', value: value(jobs, rows => rows.filter(job => job.active).length), scope: 'Active jobs returned by API', icon: <Activity size={18}/> },
     { label: 'Active Data Sources', value: value(sources, rows => rows.filter(source => source.active).length), scope: 'Current source configuration', icon: <Database size={18}/> },
     { label: 'Recent Runs', value: value(runs, rows => rows.length), scope: 'Last 20 loaded runs', icon: <Clock3 size={18}/> },
     { label: 'Successful Runs', value: value(runs, rows => rows.filter(run => run.status === 'SUCCESS').length), scope: 'Last 20 loaded runs', icon: <Activity size={18}/> },

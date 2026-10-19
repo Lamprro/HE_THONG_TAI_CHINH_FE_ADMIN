@@ -5,3 +5,4 @@ dist/
 .audit-java/
 .audit-python/
 *.tsbuildinfo
+*.log

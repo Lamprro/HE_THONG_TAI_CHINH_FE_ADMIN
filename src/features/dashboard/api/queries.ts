@@ -2,10 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import { getHealth, getJson, API_BASE } from '../../../shared/api/client';
 import type { JavaHealth, DataSource, IngestionJob, IngestionRun, RawPayload, ValidationResult, DataVersion } from '../types/dto';
 import type { ValidationRule } from '../../operations/contracts';
-export type DashboardSection = 'overview' | 'jobs' | 'runs' | 'quality' | 'sources' | 'scope';
+export type DashboardSection = 'overview' | 'jobs' | 'runs' | 'quality' | 'sources' | 'scope' | 'console' | 'data' | 'native' | 'runtime';
 export function useDashboardQueries(section: DashboardSection, enabled = true, runOpen = false) {
   const javaHealth = useQuery({ queryKey: ['java-health'], queryFn: () => getHealth<JavaHealth>(API_BASE, '/api/health'), enabled, refetchInterval: 45000 });
-  const jobs = useQuery({ queryKey: ['jobs'], queryFn: () => getJson<IngestionJob[]>(API_BASE, '/api/ingestion-jobs'), enabled: enabled && ['overview', 'jobs', 'runs'].includes(section), staleTime: 5 * 60000, refetchInterval: 5 * 60000 });
+  const jobs = useQuery({ queryKey: ['jobs'], queryFn: () => getJson<IngestionJob[]>(API_BASE, '/api/ingestion-jobs?activeOnly=false'), enabled: enabled && ['overview', 'jobs', 'runs', 'console', 'sources'].includes(section), staleTime: 5 * 60000, refetchInterval: 5 * 60000 });
   const sources = useQuery({ queryKey: ['sources'], queryFn: () => getJson<DataSource[]>(API_BASE, '/api/data-sources'), enabled: enabled && ['overview', 'jobs', 'runs', 'sources'].includes(section), staleTime: 5 * 60000, refetchInterval: 5 * 60000 });
   const runs = useQuery({ queryKey: ['runs'], queryFn: () => getJson<IngestionRun[]>(API_BASE, '/api/ingestions?limit=20'), enabled: enabled && ['overview', 'runs'].includes(section), refetchInterval: 45000 });
   const openIssues = useQuery({ queryKey: ['open-issues'], queryFn: () => getJson<ValidationResult[]>(API_BASE, '/api/admin/validation/results/open?limit=50'), enabled: enabled && ['overview', 'quality'].includes(section), refetchInterval: 90000 });
