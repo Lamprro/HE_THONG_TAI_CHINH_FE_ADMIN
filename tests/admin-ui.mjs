@@ -40,7 +40,7 @@ await page.route('**/api/**', async route => {
   if (path === '/api/admin/console/datasets') return reply([{ name: 'ingestion_runs', available: true, columns: ['id', 'status', 'ingestion_run_id'] }, { name: 'financial_metrics', available: true, columns: ['id', 'value'] }, { name: 'llm_validation_rounds', available: false, columns: [] }]);
   if (path === `/api/admin/console/commands/${commandId}`) { polls++; return reply({ ...command, status: polls > 1 ? 'SUCCEEDED' : 'RUNNING', result_json: { status: 'NO_CHANGE', runId: 'native-run-id' } }); }
   if (path.endsWith('/data/admin_commands')) return reply({ rows: command ? [command] : [], total: command ? 1 : 0 });
-  if (path.includes('/data/')) return reply({ rows: [{ id: 'row-1', status: 'FAILED', message: 'Source quota 429', value: '12345678901234567890.125' }], total: 51, page: Number(url.searchParams.get('page')), size: 25 });
+  if (path.includes('/data/')) return reply({ rows: [{ id: 'row-1', status: 'FAILED', message: 'Source quota 429', value: '12345678901234567890.125', request_query_params: { symbol: 'FPT', operation: 'OHLCV', provider: 'vndirect' } }], total: 51, page: Number(url.searchParams.get('page')), size: 25 });
   return reply([]);
 });
 const button = name => page.getByRole('button', { name, exact: true });
@@ -55,6 +55,7 @@ try {
   assert.equal(writes.length, 1); assert.equal(writes[0].body.action, 'RUN_JOB'); assert.equal(writes[0].body.input.jobId, job.id);
   assert.match(writes[0].body.idempotencyKey, /^[a-f\d-]{36}$/); assert.equal(writes[0].body.reason, 'Rebuild reviewed prices');
   await button('Tra cứu dữ liệu').click(); await page.getByText('12345678901234567890.125', { exact: true }).waitFor();
+  await page.getByText('FPT', { exact: true }).waitFor(); await page.getByText('OHLCV', { exact: true }).waitFor();
   await button('Trang sau').click(); await page.getByText('51 bản ghi · Trang 2', { exact: true }).waitFor();
   await button('Chi tiết').click(); await page.getByRole('dialog').getByText('Source quota 429', { exact: true }).waitFor(); await button('Close').click();
   await button('Luồng & API quản trị').click(); await page.getByLabel('Chức năng cần thao tác', { exact: true }).selectOption(forecast.id);
