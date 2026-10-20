@@ -42,3 +42,5 @@ Read [current admin capabilities and verification](docs/ADMIN_CONTROL_20261019.m
 Connect with the backend origin and its dedicated admin token. The token is kept
 only in browser memory. New hosting is intentionally not created; the user's
 instruction is to merge the FE changes only.
+
+Live server acceptance and final progress/audit follow-up: [October 20 evidence](docs/ADMIN_ACCEPTANCE_20261020.md).
