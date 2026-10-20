@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { Drawer } from '../../shared/components/Ui';
 import { dateTime, safeObject, safeText } from '../../shared/utils/format';
 
@@ -13,7 +14,7 @@ function text(key: string, value: unknown) {
 export function RecordDetail({ row }: { row: Row }) {
   return <dl className="record-detail">{Object.entries(row).map(([key, value]) => <div key={key}><dt>{key.replaceAll('_', ' ')}</dt><dd>{value && typeof value === 'object' ? <details><summary>Xem nội dung</summary><pre>{safeObject(value)}</pre></details> : <span className="break">{text(key, value)}</span>}</dd></div>)}</dl>;
 }
-export function Records({ rows, onRun, onRaw }: { rows: Row[]; onRun?: (id: string) => void; onRaw?: (id: string) => void }) {
+export function Records({ rows, onRun, onRaw, actions }: { rows: Row[]; onRun?: (id: string) => void; onRaw?: (id: string) => void; actions?: (row: Row) => ReactNode }) {
   const [selected, setSelected] = useState<Row | null>(null);
   rows = rows.map(row => {
     const request = row.request_query_params;
@@ -25,11 +26,12 @@ export function Records({ rows, onRun, onRaw }: { rows: Row[]; onRun?: (id: stri
   });
   const keys = [...new Set(rows.flatMap(row => Object.keys(row)))];
   const columns = [...preferred.filter(k => keys.includes(k)), ...keys.filter(k => !preferred.includes(k) && !k.endsWith('_json') && !k.endsWith('_id') && k !== 'id')].slice(0, 6);
-  return <>{rows.length ? <div className="table-scroll"><table><thead><tr>{columns.map(c => <th key={c}>{c.replaceAll('_', ' ')}</th>)}<th>Thao tác</th></tr></thead><tbody>{rows.map((row, n) => <tr key={String(row.id ?? n)}>{columns.map(c => <td className="record-cell" key={c} title={text(c, row[c])}>{text(c, row[c])}</td>)}<td><button className="text-button" onClick={() => setSelected(row)}>Chi tiết</button>{typeof row.ingestion_run_id === 'string' && onRun && <button className="text-button" onClick={() => onRun(row.ingestion_run_id as string)}>Lượt chạy</button>}{typeof row.raw_payload_id === 'string' && onRaw && <button className="text-button" onClick={() => onRaw(row.raw_payload_id as string)}>Nguồn gốc</button>}</td></tr>)}</tbody></table></div> : <p className="state-empty">Không có bản ghi phù hợp.</p>}
+  return <>{rows.length ? <div className="table-scroll"><table><thead><tr>{columns.map(c => <th key={c}>{c.replaceAll('_', ' ')}</th>)}<th>Thao tác</th></tr></thead><tbody>{rows.map((row, n) => <tr key={String(row.id ?? n)}>{columns.map(c => <td className="record-cell" key={c} title={text(c, row[c])}>{text(c, row[c])}</td>)}<td>{actions?.(row)}<button className="text-button" onClick={() => setSelected(row)}>Chi tiết</button>{typeof row.ingestion_run_id === 'string' && onRun && <button className="text-button" onClick={() => onRun(row.ingestion_run_id as string)}>Lượt chạy</button>}{typeof row.raw_payload_id === 'string' && onRaw && <button className="text-button" onClick={() => onRaw(row.raw_payload_id as string)}>Nguồn gốc</button>}</td></tr>)}</tbody></table></div> : <p className="state-empty">Không có bản ghi phù hợp.</p>}
     {selected && <Drawer title="Chi tiết bản ghi" subtitle={String(selected.id ?? '')} onClose={() => setSelected(null)}><RecordDetail row={selected}/></Drawer>}
   </>;
 }
 export function ApiResult({ value }: { value: unknown }) {
+  if (value === undefined) return <p>Chưa có nội dung hoặc backend trả thành công không kèm body.</p>;
   if (Array.isArray(value) && value.every(v => v && typeof v === 'object' && !Array.isArray(v))) return <Records rows={value as Row[]}/>;
   if (value && typeof value === 'object' && !Array.isArray(value)) return <RecordDetail row={value as Row}/>;
   return <pre>{safeObject(value)}</pre>;

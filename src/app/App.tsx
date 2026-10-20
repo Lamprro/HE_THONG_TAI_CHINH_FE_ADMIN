@@ -19,6 +19,11 @@ import { CommandPage } from '../features/admin/CommandPage';
 import { DataBrowser } from '../features/admin/DataBrowser';
 import { NativeApiPage } from '../features/admin/NativeApiPage';
 import { RuntimePage } from '../features/admin/RuntimePage';
+import { WorkflowPage, type WorkflowSelection } from '../features/admin/WorkflowPage';
+import { AiOperationsPage } from '../features/admin/AiOperationsPage';
+import { OperationsHistory } from '../features/admin/OperationsHistory';
+import { SchedulePanel } from '../features/admin/SchedulePanel';
+import { SystemSummary } from '../features/admin/SystemSummary';
 
 const titles: Record<Section, { title: string; description: string }> = {
   overview: { title: 'System Overview', description: 'Monitor service health, recent ingestion and validation issues.' },
@@ -31,6 +36,10 @@ const titles: Record<Section, { title: string; description: string }> = {
   data: { title: 'Tra cứu dữ liệu', description: 'Xem toàn bộ lịch sử, lỗi, phiên bản và bảng dữ liệu cuối có phân trang.' },
   native: { title: 'Luồng & API quản trị', description: 'Thao tác các API thực sự đang có trên backend, gồm LLM, forecast và recovery.' },
   runtime: { title: 'Hệ thống & độ phủ', description: 'Kiểm tra Java, database, Python, scheduler và các khoảng dữ liệu còn thiếu.' },
+  workflow: { title: 'Luồng dữ liệu', description: 'Điều khiển lấy nguồn, validation và build đến bảng cuối theo phạm vi được chọn.' },
+  ai: { title: 'Vận hành AI', description: 'Preview, thực thi, kiểm tra lại, quản lý prompt và duyệt recovery bằng luồng hiện có.' },
+  history: { title: 'Điều tra & xử lý', description: 'Toàn bộ tác vụ, lượt chạy, lỗi và phiên bản; theo dõi hoặc xử lý tiếp từ bằng chứng đã lưu.' },
+  audit: { title: 'Audit quản trị', description: 'Nhật ký tác động, lý do vận hành và kết quả HTTP; credential không được ghi vào audit.' },
 };
 
 export function App() {
@@ -38,6 +47,8 @@ export function App() {
 }
 function Dashboard() {
   const [section, setSection] = useState<Section>('overview');
+  const [workflow, setWorkflow] = useState<WorkflowSelection>({});
+  const [historyKind, setHistoryKind] = useState<'commands' | 'runs' | 'quality'>('commands');
   const [dark, setDark] = useState(false);
   const [runId, setRunId] = useState<string | null>(null);
   const [issue, setIssue] = useState<ValidationResult | null>(null);
@@ -95,6 +106,12 @@ function Dashboard() {
       {section === 'data' && <DataBrowser onRun={setRunId} onRaw={setRawId}/>}
       {section === 'native' && <NativeApiPage/>}
       {section === 'runtime' && <RuntimePage/>}
+      {section === 'overview' && <SystemSummary/>}
+      {section === 'runtime' && <SchedulePanel/>}
+      {section === 'workflow' && <WorkflowPage key={JSON.stringify(workflow)} initial={workflow} onRun={setRunId}/>}
+      {section === 'ai' && <AiOperationsPage onRun={setRunId}/>}
+      {section === 'history' && <><div className="toolbar">{(['commands', 'runs', 'quality'] as const).map(kind => <button key={kind} className={historyKind === kind ? 'primary-button' : 'light-button'} onClick={() => setHistoryKind(kind)}>{kind === 'commands' ? 'Tác vụ nền' : kind === 'runs' ? 'Lượt chạy nguồn' : 'Validation & version'}</button>)}</div><OperationsHistory key={historyKind} kind={historyKind} onRun={setRunId} onWorkflow={selection => { setWorkflow(selection); setSection('workflow'); }}/></>}
+      {section === 'audit' && <OperationsHistory kind="audit" onRun={setRunId} onWorkflow={selection => { setWorkflow(selection); setSection('workflow'); }}/>}
       {['jobs', 'runs', 'quality', 'sources'].includes(section) && <div className="management-toolbar">
         <div className="header-actions">
           {section === 'jobs' && <button className="primary-button" onClick={() => setOperation({ kind: 'create-job' })}>Create Job</button>}

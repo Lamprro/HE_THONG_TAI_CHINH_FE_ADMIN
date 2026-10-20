@@ -21,19 +21,19 @@ Default Java origin: http://localhost:8080. API errors stay visible; the applica
 
 ## Admin operations
 
-Create, update, activation, manual ingestion and validation actions are available after form review and explicit confirmation. There is currently no frontend role gate or fake login. `VITE_API_BASE_URL` points only to Java. A later authorization design must be enforced by Java; hiding buttons in React cannot secure an API. Disabling a job removes it from the current active-only list, so the existing API cannot rediscover it for re-enabling after reload.
+Connect to Java with its dedicated admin bearer token, kept only in memory. Java enforces access; the shared token does not identify an individual human. `VITE_API_BASE_URL` points only to Java and must never contain credentials. Jobs includes inactive definitions and reviewed edit/enable/one-off actions.
 
-Actual mutation execution against a running Java backend remains unverified. This change does not itself send a write; a user must press Confirm and execute.
+Structured data workflows run source → validation → selected-version canonical build, or resume a saved source. Durable commands expose progress, native diagnostics, queued cancellation and reviewed retries. Dedicated AI screens expose forecast preview, NEWS, recovery review/analysis and immutable prompt versions. Admin history, audit, exact data filters and scoped scheduling supplement the native API catalog. Scheduling defaults off. See [October 20 workflow report](docs/ADMIN_FLOWS_20261020.md) for actual evidence and boundaries.
 
 ## Tests
 
 npm test uses Node 24 synchronous loader hooks and the installed TypeScript compiler; tests intercept fetch and make no network requests. They cover the write services, Java request serialization, validation and HTTP errors.
 
-For isolated browser checks, build first and make Playwright available (npm install --no-save --package-lock=false playwright in a disposable test environment, or set PLAYWRIGHT_MODULE to an existing Playwright module path). npm run test:ui launches headless Chrome, serves dist locally and intercepts every /api request. PLAYWRIGHT_CHANNEL can select another installed channel. No live backend is accessed. Master-data, aliases and raw → validation → version navigation are included. Test fixtures never enter the production source or bundle.
+For isolated browser checks, build first, then install the browser with `npx playwright install chromium`. Playwright is pinned in devDependencies. `npm run test:ui` runs three suites against dist and intercepts every API request; `PLAYWRIGHT_CHANNEL=chromium` selects bundled Chromium, otherwise installed Chrome is used. Fixtures never enter the production bundle or business database. Native source/API acceptance is recorded separately from these mocked suites.
 
 ## Integration limits
 
-Jobs lists are active-only. Runs are the latest 20; validation and data versions the latest 50. Search/filter/counts describe those samples. Java health does not prove database, Redis, scheduler or collector health. Operational history does not replace actor-based admin audit logs.
+Legacy monitoring cards retain recent samples. System summary counts, operations history and the data browser query actual database totals with pagination. Java health alone does not prove provider availability; runtime views separately check the Java→Python adapter, capabilities and data coverage. New scoped scheduling has real heartbeat/sweep evidence; legacy scheduler flags remain configuration-only. Management/subsidiaries/events remain raw-only native operations. This release does not certify training data completeness or point-in-time accuracy.
 
 Documentation: [API matrix](docs/API_INTEGRATION_MATRIX.md), [backend gaps](docs/BACKEND_REQUIREMENTS.md), [architecture](docs/ARCHITECTURE.md), [implementation report](docs/IMPLEMENTATION_REPORT.md), [use-case traceability](docs/USE_CASE_TRACEABILITY.md).
 # Admin control update (2026-10-19)
