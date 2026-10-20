@@ -27,6 +27,7 @@ export async function requestJson<T>(base: string, path: string, method = 'GET',
       try { const error = await response.json(); if (response.status !== 401 && response.status !== 403 && typeof error.message === 'string') message = safeText(error.message).slice(0, 1000); if (typeof error.runId === 'string' && /^[a-f0-9-]{36}$/i.test(error.runId)) runId = error.runId; if (typeof error.upstreamStatus === 'number') upstreamStatus = error.upstreamStatus; } catch { /* Keep the safe HTTP fallback. */ }
       throw new ApiError(message, 'http', response.status, runId, upstreamStatus);
     }
+    if (response.status === 204 && method !== 'GET') return undefined as T;
     if (response.status === 204) throw new ApiError('The server returned an empty response.', 'empty');
     const body = await response.text();
     if (!body.trim()) throw new ApiError('The server returned an empty response.', 'empty');

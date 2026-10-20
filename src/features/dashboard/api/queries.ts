@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getHealth, getJson, API_BASE } from '../../../shared/api/client';
 import type { JavaHealth, DataSource, IngestionJob, IngestionRun, RawPayload, ValidationResult, DataVersion } from '../types/dto';
 import type { ValidationRule } from '../../operations/contracts';
-export type DashboardSection = 'overview' | 'jobs' | 'runs' | 'quality' | 'sources' | 'scope' | 'console' | 'data' | 'native' | 'runtime';
+export type DashboardSection = 'overview' | 'jobs' | 'runs' | 'quality' | 'sources' | 'scope' | 'console' | 'data' | 'native' | 'runtime' | 'workflow' | 'ai' | 'history' | 'audit';
 export function useDashboardQueries(section: DashboardSection, enabled = true, runOpen = false) {
   const javaHealth = useQuery({ queryKey: ['java-health'], queryFn: () => getHealth<JavaHealth>(API_BASE, '/api/health'), enabled, refetchInterval: 45000 });
   const jobs = useQuery({ queryKey: ['jobs'], queryFn: () => getJson<IngestionJob[]>(API_BASE, '/api/ingestion-jobs?activeOnly=false'), enabled: enabled && ['overview', 'jobs', 'runs', 'console', 'sources'].includes(section), staleTime: 5 * 60000, refetchInterval: 5 * 60000 });
