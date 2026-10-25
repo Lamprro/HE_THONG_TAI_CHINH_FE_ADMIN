@@ -44,3 +44,19 @@ only in browser memory. New hosting is intentionally not created; the user's
 instruction is to merge the FE changes only.
 
 Live server acceptance and final progress/audit follow-up: [October 20 evidence](docs/ADMIN_ACCEPTANCE_20261020.md).
+
+## Research data browser (2026-10-25)
+
+See [current integration evidence](docs/ADMIN_RESEARCH_BROWSER_20261025.md).
+The data browser reads exact filter capabilities from Java, supports Local AI registry
+and disclosure history, and distinguishes applied filters from draft input. Research
+results remain admin-only and do not imply production approval. Large suite manifests,
+features and provider call payloads are omitted. Missing tables are disabled in the catalog.
+
+For real localhost read-only acceptance, build first and run `node tests/research-live.mjs`
+with `ADMIN_API_TOKEN` in the process environment and `ADMIN_API_BASE` pointing to
+localhost (default port 8094). The test requires all five new datasets, stored FPT
+inputs, disabled admin workers and a read-only Java datasource. Port 5173 must be
+free and allowed by CORS. It uses installed Chrome, performs GETs only, and never
+executes a model or imports fixture data. Do not put the token in Vite variables,
+command arguments, committed files or logs. Normal CI continues using fixture suites.

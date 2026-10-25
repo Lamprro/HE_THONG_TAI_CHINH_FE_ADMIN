@@ -27,7 +27,9 @@ export function Records({ rows, onRun, onRaw, actions }: { rows: Row[]; onRun?: 
     return row;
   });
   const keys = [...new Set(rows.flatMap(row => Object.keys(row)))];
-  const ordered = keys.includes('event_type') ? auditColumns : preferred;
+  const ordered = keys.includes('event_type') ? auditColumns : keys.includes('model_id')
+    ? ['ticker', 'model_id', 'role', 'status', 'readiness', 'target_period', 'data_as_of', 'error_code', 'started_at']
+    : keys.includes('document_id') ? ['symbol', 'period_end', 'published_on', 'report_scope', 'revision_status', 'observed_at'] : preferred;
   const columns = [...ordered.filter(k => keys.includes(k)), ...keys.filter(k => !ordered.includes(k) && !k.endsWith('_json') && !k.endsWith('_id') && k !== 'id')].slice(0, 6);
   return <>{rows.length ? <div className="table-scroll"><table><thead><tr>{columns.map(c => <th key={c}>{labels[c] ?? c.replaceAll('_', ' ')}</th>)}<th>Thao tác</th></tr></thead><tbody>{rows.map((row, n) => <tr key={String(row.id ?? n)}>{columns.map(c => <td className="record-cell" key={c} title={text(c, row[c])}>{text(c, row[c])}</td>)}<td>{actions?.(row)}<button className="text-button" onClick={() => setSelected(row)}>Chi tiết</button>{typeof row.ingestion_run_id === 'string' && onRun && <button className="text-button" onClick={() => onRun(row.ingestion_run_id as string)}>Lượt chạy</button>}{typeof row.raw_payload_id === 'string' && onRaw && <button className="text-button" onClick={() => onRaw(row.raw_payload_id as string)}>Nguồn gốc</button>}</td></tr>)}</tbody></table></div> : <p className="state-empty">Không có bản ghi phù hợp.</p>}
     {selected && <Drawer title="Chi tiết bản ghi" subtitle={String(selected.id ?? '')} onClose={() => setSelected(null)}><RecordDetail row={selected}/></Drawer>}
