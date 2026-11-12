@@ -28,7 +28,7 @@ export function WorkflowPage({ initial = {}, onRun }: { initial?: WorkflowSelect
     try {
       if (!reason.trim()) throw new Error('Ghi lý do vận hành.');
       let input: unknown;
-      if (mode === 'PROCESS_RUN') { if (!runId) throw new Error('Chọn lượt chạy nguồn cần tiếp tục.'); input = { runId }; }
+      if (mode === 'PROCESS_RUN' || mode === 'REPLAY_RUN') { if (!runId) throw new Error('Điền ID lượt chạy nguồn.'); input = { runId }; }
       else if (mode === 'BUILD_VERSION') { if (!jobId || !version) throw new Error('Chọn builder và version cần build.'); input = { jobId, versionId: version }; }
       else if (mode === 'RUN_JOB') { if (!jobId) throw new Error('Chọn job.'); input = { jobId }; }
       else {
@@ -47,7 +47,7 @@ export function WorkflowPage({ initial = {}, onRun }: { initial?: WorkflowSelect
   const execute = async () => { if (!review || sending.current) return; sending.current = true; try { await submit.mutateAsync(review); } catch { /* Same request key remains available. */ } finally { sending.current = false; } };
   return <div className="admin-stack"><Panel title="Luồng xử lý dữ liệu" note="Lấy dữ liệu qua Python → kiểm tra bằng luật Java → build đúng batch vào bảng cuối. Không quét batch của công việc khác.">
     <fieldset disabled={!!review || submit.isPending}><div className="admin-form-grid">
-      <label>Cách xử lý<select aria-label="Cách xử lý" value={mode} onChange={e => setMode(e.target.value)}><option value="INGEST_VALIDATE_BUILD">Lấy nguồn → validation → build</option><option value="PROCESS_RUN">Tiếp tục từ nguồn đã lưu</option><option value="BUILD_VERSION">Build một version đã qua validation</option><option value="RUN_JOB">Chạy workflow/job đang cấu hình</option></select></label>
+      <label>Cách xử lý<select aria-label="Cách xử lý" value={mode} onChange={e => setMode(e.target.value)}><option value="INGEST_VALIDATE_BUILD">Lấy nguồn → validation → build</option><option value="PROCESS_RUN">Tiếp tục từ nguồn đã lưu</option><option value="BUILD_VERSION">Build một version đã qua validation</option><option value="RUN_JOB">Chạy workflow/job đang cấu hình</option><option value="REPLAY_RUN">Lấy lại nguồn theo yêu cầu gốc (không build)</option></select></label>
       {mode === 'INGEST_VALIDATE_BUILD' && <>
         <label>Loại dữ liệu<select aria-label="Loại dữ liệu" value={operation} onChange={e => setOperation(e.target.value)}>{operations.map(o => <option key={o}>{o}</option>)}</select></label>
         <label>Nguồn dữ liệu<select aria-label="Nguồn dữ liệu" value={source} onChange={e => setSource(e.target.value)}><option value="">Chọn nguồn…</option>{sources.data?.filter(s => s.active && s.sourceType === 'API').map(s => <option key={s.code} value={s.code}>{s.name} · {s.provider}</option>)}</select></label>
@@ -55,7 +55,7 @@ export function WorkflowPage({ initial = {}, onRun }: { initial?: WorkflowSelect
         <label>Từ ngày<input type="date" value={start} onChange={e => setStart(e.target.value)}/></label><label>Đến ngày<input type="date" value={end} onChange={e => setEnd(e.target.value)}/></label>
         {operation === 'FINANCIAL_STATEMENT' && <><label>Loại báo cáo<select value={statement} onChange={e => setStatement(e.target.value)}><option value="balance_sheet">Bảng cân đối kế toán</option><option value="income_statement">Kết quả kinh doanh</option><option value="cash_flow">Lưu chuyển tiền tệ</option></select></label><label>Chu kỳ<select value={period} onChange={e => setPeriod(e.target.value)}><option value="quarter">Quý · tối đa 52 kỳ theo nguồn</option><option value="year">Năm · tối đa 13 kỳ theo nguồn</option></select></label></>}
       </>}
-      {mode === 'PROCESS_RUN' && <label>Lượt chạy nguồn<input aria-label="Lượt chạy nguồn" value={runId} onChange={e => setRun(e.target.value)}/></label>}
+      {['PROCESS_RUN', 'REPLAY_RUN'].includes(mode) && <label>Lượt chạy nguồn<input aria-label="Lượt chạy nguồn" value={runId} onChange={e => setRun(e.target.value)}/></label>}
       {mode === 'BUILD_VERSION' && <label>Version ID<input aria-label="Version ID" value={version} onChange={e => setVersion(e.target.value)}/></label>}
       {['BUILD_VERSION', 'RUN_JOB'].includes(mode) && <label>Workflow/job<select aria-label="Workflow/job" value={jobId} onChange={e => setJob(e.target.value)}><option value="">Chọn job…</option>{jobs.data?.filter(j => mode === 'RUN_JOB' || builders.includes(j.code)).map(j => <option key={j.id} value={j.id}>{j.name} · {j.code} · {j.active ? 'bật' : 'tắt'}</option>)}</select></label>}
     </div>{mode === 'INGEST_VALIDATE_BUILD' && <details><summary>Tham số nguồn nâng cao</summary><textarea rows={5} aria-label="Tham số nguồn nâng cao" value={params} onChange={e => setParams(e.target.value)}/></details>}

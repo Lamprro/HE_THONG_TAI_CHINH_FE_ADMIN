@@ -1,6 +1,6 @@
 import { authHeaders, authCredentials, sessionExpired } from './access';
 import { safeText } from '../utils/format';
-export let API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://hardened-taekwondo-likewise.ngrok-free.dev';
+export let API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 export function setApiBase(value: string) {
   const url = new URL(value.trim());
   if (url.username || url.password || url.search || url.hash ||

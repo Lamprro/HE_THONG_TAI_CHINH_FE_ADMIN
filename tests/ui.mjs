@@ -38,7 +38,7 @@ const available = async () => assert.equal(await button('Confirm and execute').i
 try {
   await page.goto(`http://127.0.0.1:${server.address().port}`);
   if (await page.getByLabel('Token admin', { exact: true }).count()) { await page.getByLabel('Token admin', { exact: true }).fill('isolated-ui-test-token-at-least-32-characters'); await button('Kết nối').click(); }
-  await button('Ingestion Jobs').click();
+  await button('Job & nguồn').click();
   await button('Create Job').click(); await review();
   assert.ok(await page.getByText('This field is required.', { exact: true }).count());
   await page.getByLabel('Data Source *', { exact: true }).selectOption('VN');
@@ -56,19 +56,19 @@ try {
   await page.getByLabel('Data Source *', { exact: true }).selectOption('VN'); await review();
   assert.equal(await page.getByText('Symbol is required for this operation.').count(), 1);
   await page.getByLabel('Symbol', { exact: true }).fill('FPT'); await review(); await available(); await close();
-  await button('Data Sources').click(); await page.getByText('Market Source', { exact: true }).click(); await button('Edit Data Source').click();
+  await button('Job & nguồn').click(); await button('Data Sources').click(); await page.getByText('Market Source', { exact: true }).click(); await button('Edit Data Source').click();
   assert.equal(await page.getByLabel('Code *', { exact: true }).getAttribute('readonly'), '');
   assert.equal(await page.getByLabel('Name *', { exact: true }).inputValue(), 'Market Source');
   await page.getByLabel('Active', { exact: true }).selectOption('false'); await review(); await available();
   assert.equal(await page.getByText('The source active status will change. This can affect ingestion.').count(), 1); await close();
-  await button('Data Quality').click(); await page.getByRole('tab', { name: 'Validation Rules' }).click();
+  await button('Chất lượng dữ liệu').click(); await page.getByRole('tab', { name: 'Validation Rules' }).click();
   await page.getByText('RAW_REQUIRED', { exact: true }).waitFor();
   await button('Validate Pending Data').click(); await page.getByLabel('Maximum payloads to process *').fill('101'); await review();
   assert.equal(await page.getByText('Enter an integer from 1 to 100.').count(), 1);
   await page.getByLabel('Maximum payloads to process *').fill('50'); await review(); await available(); await close();
-  await button('Ingestion Runs').click(); await page.getByText('Price Import', { exact: true }).click();
+  await button('Tác vụ & lịch sử').click(); await button('Lượt chạy gần đây').click(); await page.getByText('Price Import', { exact: true }).click();
   await button('Run Validation').click(); await review(); await available(); await close();
-  await button('Data Scope').click(); await page.getByText('Acme Company', { exact: true }).click();
+  await button('Danh mục mã').click(); await page.getByText('Acme Company', { exact: true }).click();
   await page.getByText('Acme Legacy', { exact: true }).waitFor(); await button('Edit Company').click();
   assert.equal(await page.getByLabel('Legal Name *', { exact: true }).inputValue(), 'Acme Company');
   assert.equal(await page.getByLabel('Description', { exact: true }).inputValue(), 'Test master record');
@@ -85,7 +85,7 @@ try {
   await page.getByLabel('Currency *', { exact: true }).fill('VIETNAM'); await review();
   assert.equal(await page.getByText('Use a three-letter currency code.').count(), 1);
   await page.getByLabel('Currency *', { exact: true }).fill('VND'); await review(); await available(); await close();
-  await button('Ingestion Runs').click(); await page.getByText('Price Import', { exact: true }).click();
+  await button('Tác vụ & lịch sử').click(); await button('Lượt chạy gần đây').click(); await page.getByText('Price Import', { exact: true }).click();
   await button('View Raw Payload Metadata').click(); await page.getByText('SHA-256: ' + 'a'.repeat(64), { exact: true }).waitFor();
   await button('View payload validation results').click();
   await page.getByText('RAW_REQUIRED', { exact: true }).click();
@@ -93,7 +93,7 @@ try {
   await button('View Raw Payload Metadata').click(); await button('View data versions for run').click();
   await page.getByText('VERSION-2', { exact: true }).click(); await button('View loaded parent version').click();
   assert.equal(await page.getByRole('dialog').getByRole('heading', { name: 'VERSION-1', exact: true }).count(), 1); await close();
-  await page.setViewportSize({ width: 390, height: 844 }); await button('Ingestion Jobs').click(); await button('Create Job').click();
+  await page.setViewportSize({ width: 390, height: 844 }); await button('Job & nguồn').click(); await button('Ingestion Jobs').click(); await button('Create Job').click();
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.keyboard.press('Escape'); assert.equal(await page.getByRole('dialog').count(), 0);
   assert.deepEqual(problems, []); assert.deepEqual(writes, []);

@@ -1,24 +1,28 @@
-import { Activity, BriefcaseBusiness, Database, LayoutDashboard, Moon, ServerCog, Sun } from 'lucide-react';
-export type Section = 'overview' | 'jobs' | 'runs' | 'quality' | 'sources' | 'scope' | 'console' | 'data' | 'native' | 'runtime' | 'workflow' | 'ai' | 'history' | 'audit';
-const items: { id: Section; title: string; icon: typeof Activity }[] = [
-  { id: 'overview', title: 'Overview', icon: LayoutDashboard },
-  { id: 'jobs', title: 'Ingestion Jobs', icon: BriefcaseBusiness },
-  { id: 'runs', title: 'Ingestion Runs', icon: Activity },
-  { id: 'quality', title: 'Data Quality', icon: Database },
-  { id: 'sources', title: 'Data Sources', icon: ServerCog },
-  { id: 'scope', title: 'Data Scope', icon: BriefcaseBusiness },
-  { id: 'console', title: 'Điều hành tác vụ', icon: ServerCog },
-  { id: 'data', title: 'Tra cứu dữ liệu', icon: Database },
-  { id: 'native', title: 'Luồng & API quản trị', icon: BriefcaseBusiness },
-  { id: 'workflow', title: 'Luồng dữ liệu', icon: ServerCog },
-  { id: 'ai', title: 'Vận hành AI', icon: BriefcaseBusiness },
-  { id: 'history', title: 'Điều tra & xử lý', icon: Activity },
-  { id: 'audit', title: 'Audit quản trị', icon: Database },
-  { id: 'runtime', title: 'Hệ thống & độ phủ', icon: Activity },
+import { Activity, Bot, BriefcaseBusiness, Building2, Database, LayoutDashboard, Moon, Search, ServerCog, ShieldCheck, Sun, Workflow } from 'lucide-react';
+
+export type Section = 'overview' | 'workflow' | 'history' | 'jobs' | 'scope' | 'quality' | 'ai' | 'data' | 'system';
+export const sections: { id: Section; title: string; group: 'Giám sát' | 'Vận hành'; icon: typeof Activity }[] = [
+  { id: 'overview', title: 'Tổng quan', group: 'Giám sát', icon: LayoutDashboard },
+  { id: 'history', title: 'Tác vụ & lịch sử', group: 'Giám sát', icon: Activity },
+  { id: 'data', title: 'Tra cứu dữ liệu', group: 'Giám sát', icon: Search },
+  { id: 'system', title: 'Hệ thống', group: 'Giám sát', icon: ServerCog },
+  { id: 'workflow', title: 'Luồng dữ liệu', group: 'Vận hành', icon: Workflow },
+  { id: 'jobs', title: 'Job & nguồn', group: 'Vận hành', icon: BriefcaseBusiness },
+  { id: 'scope', title: 'Danh mục mã', group: 'Vận hành', icon: Building2 },
+  { id: 'quality', title: 'Chất lượng dữ liệu', group: 'Vận hành', icon: ShieldCheck },
+  { id: 'ai', title: 'Vận hành AI', group: 'Vận hành', icon: Bot },
 ];
+
 export function AdminLayout({ section, setSection, dark, setDark, children }: { section: Section; setSection: (section: Section) => void; dark: boolean; setDark: (value: boolean) => void; children: React.ReactNode }) {
   return <div className={`shell ${dark ? 'dark' : ''}`}>
-    <aside className="sidebar"><div className="brand"><div className="brand-mark">T<span>B</span></div><div><strong>TOKEN BURNER</strong><small>ADMIN CONSOLE</small></div></div><nav aria-label="Main navigation">{(["MONITORING", "MANAGEMENT"] as const).map(group => <div key={group}><div className="nav-label">{group}</div>{items.filter(item => group === "MONITORING" ? ["overview", "runs", "runtime"].includes(item.id) : ["jobs", "sources", "scope", "quality", "console", "data", "native", "workflow", "ai", "history", "audit"].includes(item.id)).map(item => <button key={item.id} className={`nav-item ${section === item.id ? 'active' : ''}`} aria-current={section === item.id ? 'page' : undefined} onClick={() => setSection(item.id)}><item.icon size={17}/><span>{item.title}</span></button>)}</div>)}</nav><div className="sidebar-bottom"><button className="theme-button" onClick={() => setDark(!dark)}>{dark ? <Sun size={16}/> : <Moon size={16}/>} {dark ? 'Light mode' : 'Dark mode'}</button><div className="sidebar-foot">MONITORING & MANAGEMENT<br/>Java API connection</div></div></aside>
+    <aside className="sidebar">
+      <div className="brand"><div className="brand-mark">T<span>B</span></div><div><strong>TOKEN BURNER</strong><small>ADMIN CONSOLE</small></div></div>
+      <nav aria-label="Main navigation">{(['Giám sát', 'Vận hành'] as const).map(group => <div key={group}>
+        <div className="nav-label">{group.toUpperCase()}</div>
+        {sections.filter(item => item.group === group).map(item => <button key={item.id} className={`nav-item ${section === item.id ? 'active' : ''}`} aria-current={section === item.id ? 'page' : undefined} onClick={() => setSection(item.id)}><item.icon size={17}/><span>{item.title}</span></button>)}
+      </div>)}</nav>
+      <div className="sidebar-bottom"><button className="theme-button" onClick={() => setDark(!dark)}>{dark ? <Sun size={16}/> : <Moon size={16}/>} {dark ? 'Giao diện sáng' : 'Giao diện tối'}</button><div className="sidebar-foot"><Database size={12}/> Java API · nguồn qua Python</div></div>
+    </aside>
     <main className="main">{children}</main>
   </div>;
 }
